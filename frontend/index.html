@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowSplit — Capacity-Aware, AI-Powered Routing Dashboard</title>
+  <meta name="description"
+    content="Intelligent traffic routing system mitigating GPS-induced residential side-street gridlock through road imagery analysis and capacity-aware optimization.">
+
+  <!-- Modern Typography from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+
+  <!-- Application Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="light-transit-theme">
+  <!-- Top Navigation Header -->
+  <header class="app-header" id="appHeader">
+    <div class="brand-container">
+      <div class="brand-logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6" cy="19" r="3" />
+          <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+          <circle cx="18" cy="5" r="3" />
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1 class="brand-title">FlowSplit</h1>
+        <span class="brand-subtitle">Smart Mobility & Corridor Routing</span>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="api-status-pill" id="apiStatusBadge">
+        <span class="status-dot live" id="statusDot"></span>
+        <span class="status-text" id="statusText">Live Google & Gemini APIs Connected</span>
+        <span id="demoBannerTag" style="display: none;"></span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="vehicle-select-wrapper">
+        <label for="vehicleTypeSelect" class="sr-only">Vehicle Profile</label>
+        <select id="vehicleTypeSelect" class="select-input" title="Choose Vehicle Profile">
+          <option value="passenger_car" selected>🚗 Passenger Car</option>
+          <option value="delivery_van">🚐 Delivery Van</option>
+          <option value="emergency_vehicle">🚑 Emergency Vehicle</option>
+          <option value="heavy_truck">🚛 Heavy Truck</option>
+        </select>
+      </div>
+      <button id="btnOpenSimulation" class="btn btn-secondary btn-icon" title="View Capacity Benchmark Simulation">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3v18h18" />
+          <path d="m19 9-5 5-4-4-3 3" />
+        </svg>
+        <span>Simulation Lab</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Dashboard -->
+  <main class="dashboard-layout" id="dashboardLayout">
+    <!-- Left Sidebar: Controls & Analysis -->
+    <aside class="sidebar-panel" id="sidebarPanel">
+
+      <!-- Journey Input Form Card -->
+      <section class="card route-input-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Plan Journey</h2>
+            <p class="card-caption">Capacity-aware route optimization</p>
+          </div>
+          <span class="card-badge" id="searchModeBadge">Active Protection</span>
+        </div>
+
+        <form id="routeSearchForm" class="search-form">
+          <!-- Connected Journey Input Box -->
+          <div class="journey-box">
+            <div class="journey-track-indicator">
+              <span class="journey-dot origin" title="Origin"></span>
+              <span class="journey-line"></span>
+              <span class="journey-dot destination" title="Destination"></span>
+            </div>
+
+            <div class="journey-inputs-column">
+              <!-- Origin Row -->
+              <div class="journey-field-row">
+                <div class="journey-field-label">FROM</div>
+                <div class="journey-field-input-wrap">
+                  <input type="text" id="originInput" class="journey-input" placeholder="Origin (lat, lng)"
+                    value="37.7749, -122.4494" required autocomplete="off">
+                  <button type="button" id="btnUseLocation" class="btn-location-pill"
+                    title="Acquire device location via GPS">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                    </svg>
+                    <span>GPS</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="journey-divider"></div>
+
+              <!-- Destination Row -->
+              <div class="journey-field-row">
+                <div class="journey-field-label">TO</div>
+                <div class="journey-field-input-wrap">
+                  <input type="text" id="destinationInput" class="journey-input" placeholder="Destination (lat, lng)"
+                    value="37.7915, -122.3999" required autocomplete="off">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-feedback" id="geolocationFeedback"></div>
+
+          <!-- Quick Scenario Presets -->
+          <div class="preset-links">
+            <span class="preset-label">Corridors:</span>
+            <button type="button" class="preset-btn active" data-origin="37.7749, -122.4494"
+              data-dest="37.7915, -122.3999">
+              Residential Shortcut
+            </button>
+            <button type="button" class="preset-btn" data-origin="37.7650, -122.4600" data-dest="37.7980, -122.4050">
+              Arterial Spillover
+            </button>
+          </div>
+
+          <!-- Submit Action -->
+          <button type="submit" id="btnCalculateRoutes" class="btn btn-primary btn-block">
+            <span class="btn-spinner" id="routeSearchSpinner" style="display: none;"></span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="btnSearchIcon">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            <span id="routeSearchBtnText">Evaluate Routes</span>
+          </button>
+        </form>
+
+        <div class="search-status-bar" id="provenanceNotice">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4" />
+            <path d="M12 8h.01" />
+          </svg>
+          <span id="provenanceText">Real-time Google Routes API & Gemini Vision inspection active.</span>
+        </div>
+      </section>
+
+      <!-- Candidate Routes Comparison List -->
+      <section class="card routes-list-card" id="routesListCard">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Alternative Corridors</h2>
+            <p class="card-caption">Real-time candidate comparisons</p>
+          </div>
+          <span class="results-count" id="candidateCountTag">0 routes</span>
+        </div>
+
+        <div id="candidateRoutesContainer" class="candidate-routes-container">
+          <div class="empty-state">
+            <p>Click <strong>Evaluate Routes</strong> to compute candidate paths and inspect street-level road safety.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Selected Route Decision Details -->
+      <section class="card selected-route-card" id="selectedRouteCard" style="display: none;">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Optimal Choice</h2>
+            <p class="card-caption">FlowSplit capacity-safe recommendation</p>
+          </div>
+          <span class="badge badge-orange" id="recommendationStatusBadge">Recommended</span>
+        </div>
+
+        <div class="selected-route-body">
+          <div class="route-header-row">
+            <h3 class="selected-route-name" id="selectedRouteName">—</h3>
+            <div class="selected-route-time" id="selectedRouteTime">—</div>
+          </div>
+          <p class="route-summary-text" id="selectedRouteSummary">—</p>
+
+          <div class="metrics-grid">
+            <div class="metric-box">
+              <span class="metric-label">Suitability</span>
+              <span class="metric-val score" id="selectedSuitabilityScore">—</span>
+              <span class="metric-sub" id="selectedSuitabilityConf">Conf: —</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-label">Distance</span>
+              <span class="metric-val" id="selectedDistanceVal">—</span>
+              <span class="metric-sub" id="selectedFreeFlowVal">Free-flow: —</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-label">Bottleneck</span>
+              <span class="metric-val" id="selectedChokeRisk">—</span>
+              <span class="metric-sub" id="selectedVCRatio">Max V/C: —</span>
+            </div>
+          </div>
+
+          <!-- Rationale explanation -->
+          <div class="rationale-box">
+            <div class="rationale-title">Engine Rationale:</div>
+            <p class="rationale-desc" id="selectedRationaleText">—</p>
+          </div>
+
+          <!-- Explicit 'Use This Route' Action -->
+          <button id="btnConfirmRoute" class="btn btn-primary btn-block">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span id="btnConfirmRouteText">Use This Recommended Route</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Road Segment Visual Deep-Dive -->
+      <section class="card road-inspection-card" id="roadInspectionCard" style="display: none;">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Road Conditions & Safety</h2>
+            <p class="card-caption">Multimodal visual road geometry</p>
+          </div>
+          <span class="badge badge-neutral" id="inspectionBadge">AI Verified</span>
+        </div>
+        <p class="inspection-desc">Physical carriageway width, curbside parking, and safety context inferred from street-level imagery:</p>
+        <div class="segments-accordion" id="segmentsAccordionContainer">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+    </aside>
+
+    <!-- Right Panel: Interactive Geospatial Map -->
+    <section class="map-view-panel" id="mapViewPanel">
+      <!-- Main Map Element (Google Maps or Fallback Canvas Engine) -->
+      <div id="flowsplitMap" class="map-canvas-container"></div>
+
+      <!-- Floating Minimalist Map Status Pill -->
+      <div class="map-floating-status" id="mapHud">
+        <div class="floating-pill-content">
+          <span class="floating-pill-dot"></span>
+          <span class="floating-pill-title" id="hudRouteLabel">Awaiting Search</span>
+          <span class="floating-pill-separator">•</span>
+          <span class="floating-pill-score" id="hudScoreLabel">—</span>
+        </div>
+        <span id="hudEngineLabel" style="display: none;">Google Maps JS</span>
+      </div>
+
+      <!-- Map Floating Route Legend (Dynamically populated from online API) -->
+      <div class="map-legend" id="mapLegend">
+        <div class="legend-header">Candidate Paths</div>
+        <div class="legend-item">
+          <span class="legend-text" style="color: #64748b;">Awaiting live route evaluation...</span>
+        </div>
+      </div>
+
+      <!-- Map Controls Overlay -->
+      <div class="map-controls">
+        <button id="btnZoomIn" class="map-control-btn" title="Zoom In">+</button>
+        <button id="btnZoomOut" class="map-control-btn" title="Zoom Out">−</button>
+        <button id="btnResetView" class="map-control-btn" title="Reset View">⟲</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Traffic Simulation Lab (Baseline vs FlowSplit 900 Trips) -->
+  <div class="modal-backdrop" id="simulationModal" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 class="modal-title">FlowSplit Traffic Simulation Lab</h2>
+          <p class="modal-subtitle">Deterministic 900-Trip Benchmark: Traditional GPS vs. FlowSplit Capacity-Aware
+            Optimization</p>
+        </div>
+        <button class="btn-close" id="btnCloseSimulation" title="Close Simulation Modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Simulation Control Bar -->
+        <div class="sim-control-bar">
+          <div class="sim-input-row">
+            <label for="simDemandInput">Hourly Commuter Trips:</label>
+            <input type="number" id="simDemandInput" value="900" min="100" max="3000" step="100"
+              class="sim-number-input">
+            <button id="btnRunSimSimulation" class="btn btn-primary">Run Simulation</button>
+          </div>
+          <div class="sim-disclaimer-pill">
+            Simulated using standard Bureau of Public Roads (BPR) volume-delay curves
+          </div>
+        </div>
+
+        <!-- Comparative KPI Cards -->
+        <div class="sim-kpi-grid">
+          <div class="kpi-card highlight">
+            <span class="kpi-label">Average Travel Time</span>
+            <div class="kpi-comparison">
+              <div class="kpi-col baseline">
+                <span class="kpi-col-title">Baseline GPS</span>
+                <span class="kpi-val bad" id="simBaselineAvgTime">24.8 min</span>
+              </div>
+              <div class="kpi-arrow">➔</div>
+              <div class="kpi-col flowsplit">
+                <span class="kpi-col-title">FlowSplit</span>
+                <span class="kpi-val good" id="simFlowSplitAvgTime">7.8 min</span>
+              </div>
+            </div>
+            <span class="kpi-delta" id="simTimeDeltaBadge">−68% Transit Time</span>
+          </div>
+
+          <div class="kpi-card highlight">
+            <span class="kpi-label">Max Residential Queue</span>
+            <div class="kpi-comparison">
+              <div class="kpi-col baseline">
+                <span class="kpi-col-title">Baseline GPS</span>
+                <span class="kpi-val bad" id="simBaselineQueue">165 vehicles</span>
+              </div>
+              <div class="kpi-arrow">➔</div>
+              <div class="kpi-col flowsplit">
+                <span class="kpi-col-title">FlowSplit</span>
+                <span class="kpi-val good" id="simFlowSplitQueue">0 vehicles</span>
+              </div>
+            </div>
+            <span class="kpi-delta" id="simQueueDeltaBadge">−100% Queue</span>
+          </div>
+
+          <div class="kpi-card">
+            <span class="kpi-label">Overloaded Segments</span>
+            <div class="kpi-comparison">
+              <div class="kpi-col baseline">
+                <span class="kpi-val bad" id="simBaselineOverloaded">2 segments</span>
+              </div>
+              <div class="kpi-arrow">➔</div>
+              <div class="kpi-col flowsplit">
+                <span class="kpi-val good" id="simFlowSplitOverloaded">0 segments</span>
+              </div>
+            </div>
+            <span class="kpi-sub">V/C ratio > 1.0</span>
+          </div>
+        </div>
+
+        <!-- Route Allocation Comparison Table -->
+        <div class="sim-table-section">
+          <h3>Traffic Volume Allocation</h3>
+          <table class="sim-data-table">
+            <thead>
+              <tr>
+                <th>Corridor Name</th>
+                <th>Capacity</th>
+                <th>Suitability</th>
+                <th>Baseline Allocation</th>
+                <th>FlowSplit Allocation</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="simAllocationsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Narrative Analysis -->
+        <div class="sim-verdict-box" id="simVerdictBox">
+          <p id="simVerdictText">Traditional navigation direct 72% of commuters onto the Elm residential shortcut to
+            save 40 initial seconds, causing catastrophic hyper-congestion. FlowSplit balances demand against capacity,
+            preserving free-flowing corridors across the city.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client-Side Scripts -->
+  <script src="js/api_client.js?v=2.1"></script>
+  <script src="js/geolocation.js?v=2.1"></script>
+  <script src="js/map_controller.js?v=2.1"></script>
+  <script src="js/components/route_comparison.js?v=2.1"></script>
+  <script src="js/components/road_details.js?v=2.1"></script>
+  <script src="js/components/simulation_view.js?v=2.1"></script>
+  <script src="js/app.js?v=2.1"></script>
+</body>
+
+</html>
